@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nur Qalbi Shop - Spare Part & Aksesoris</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { lgRed: '#FD312E', lgDarkRed: '#A50034', lgGray: '#6B6B6B', lgLight: '#F8F9FA' }
+                }
+            }
+        }
+    </script>
+    <style>
+        .card-hover { transition: all 0.3s; }
+        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; overflow-y: auto; }
+        .modal-content { max-width: 500px; margin: 2rem auto; background: white; border-radius: 12px; padding: 1.5rem; position: relative; }
+        .chat-box { position: fixed; bottom: 20px; right: 20px; z-index: 999; }
+        .chat-window { display: none; width: 320px; height: 450px; background: white; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); flex-direction: column; }
+        .notifikasi { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: white; padding: 1rem 1.5rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 2000; display: none; min-width: 250px; text-align: center; }
+        /* Tambahan gaya logo */
+        .logo-toko {
+            height: 40px;
+            width: auto;
+            object-fit: contain;
+        }
+    </style>
+</head>
+<body class="bg-lgLight text-gray-800">
+    <!-- Notifikasi Kustom -->
+    <div id="notifikasi" class="notifikasi">
+        <p id="teksNotifikasi"></p>
+        <button onclick="tutupNotifikasi()" class="mt-2 text-lgRed font-medium">Oke</button>
+    </div>
+
+    <header class="bg-white shadow sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <!-- Tombol Kembali -->
+                <button onclick="window.history.back()" class="text-lgDarkRed mr-2 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
+                    <i class="fa fa-arrow-left text-lg"></i>
+                </button>
+                <!-- Logo Toko -->
+                <img src="logo-toko.png" alt="Logo Nur Qalbi Shop" class="logo-toko">
+                <h1 class="text-xl font-bold text-lgDarkRed">Nur Qalbi Shop</h1>
+            </div>
+            <nav class="hidden md:flex gap-6">
+                <a href="#beranda" class="hover:text-lgRed">Beranda</a>
+                <a href="#barang" class="hover:text-lgRed">Barang</a>
+                <a href="#kontak" class="hover:text-lgRed">Kontak</a>
+                <a href="/admin.html" class="text-lgRed font-medium">Admin</a>
+            </nav>
+            <button onclick="bukaKeranjang()" class="relative bg-lgRed text-white p-2 rounded hover:bg-lgDarkRed">
+                <i class="fa fa-shopping-cart"></i>
+                <span id="jumlahKeranjang" class="absolute -top-2 -right-2 bg-white text-lgRed text-xs rounded-full w-4 h-4 flex items-center justify-center text-xs">0</span>
+            </button>
+        </div>
+    </header>
+
+    <section id="beranda" class="bg-gradient-to-r from-lgDarkRed to-lgRed text-white py-12 text-center">
+        <h2 class="text-4xl font-bold mb-3">Spare Part & Aksesoris Elektronik</h2>
+        <p class="mb-6">Barang asli, bergaransi, lengkap untuk semua merek</p>
+        <a href="#barang" class="bg-white text-lgDarkRed px-6 py-2 rounded font-semibold hover:bg-gray-100">Lihat Barang</a>
+    </section>
+
+    <section id="barang" class="py-12 px-4">
+        <div class="container mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-8 text-lgDarkRed">Daftar Barang</h2>
+            <div id="daftarProduk" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+        </div>
+    </section>
+
+    <!-- Modal Detail Barang -->
+    <div id="modalDetail" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="namaBarang" class="text-xl font-bold text-lgDarkRed"></h3>
+                <button onclick="tutupModal()" class="text-gray-500 hover:text-gray-700 text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">&times;</button>
+            </div>
+            <img id="gambarBarang" src="" alt="" class="w-full h-64 object-cover rounded mb-3">
+            <video id="videoBarang" controls class="w-full rounded mb-3" style="display:none;"></video>
+            <p id="deskripsiBarang" class="mb-2 text-gray-600"></p>
+            <p id="hargaBarang" class="text-lgRed font-bold text-xl mb-2"></p>
+            <p id="stokBarang" class="text-sm text-gray-500 mb-4"></p>
+            <button onclick="tambahKeranjang(detailId)" class="w-full bg-lgRed text-white py-2 rounded hover:bg-lgDarkRed transition">Tambah ke Keranjang</button>
+        </div>
+    </div>
+
+    <!-- Modal Keranjang -->
+    <div id="modalKeranjang" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-lgDarkRed">Keranjang Belanja</h3>
+                <button onclick="tutupModal()" class="text-gray-500 hover:text-gray-700 text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">&times;</button>
+            </div>
+            <div id="isiKeranjang" class="mb-4 max-h-60 overflow-y-auto"></div>
+            <div id="totalKeranjang" class="font-bold text-right text-lg text-lgDarkRed pt-2 border-t"></div>
+            <div class="flex gap-2 mt-6">
+                <button onclick="tutupModal()" class="w-1/2 border border-gray-300 text-gray-700 py-2 rounded hover:bg-gray-100">Lanjut Belanja</button>
+                <button onclick="bukaFormPesan()" class="w-1/2 bg-lgRed text-white py-2 rounded hover:bg-lgDarkRed">Pesan Sekarang</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Form Pemesanan -->
+    <div id="modalPesan" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-lgDarkRed">Form Pemesanan</h3>
+                <button onclick="tutupModal()" class="text-gray-500 hover:text-gray-700 text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">&times;</button>
+            </div>
+            <form onsubmit="kirimPesanan(event)">
+                <div class="mb-3">
+                    <label class="block mb-1 text-sm font-medium text-gray-700">Nama Lengkap</label>
+                    <input type="text" name="nama" required class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-lgRed">
+                </div>
+                <div class="mb-3">
+                    <label class="block mb-1 text-sm font-medium text-gray-700">Nomor Telepon / WhatsApp</label>
+                    <input type="tel" name="telepon" required class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-lgRed">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-1 text-sm font-medium text-gray-700">Alamat Lengkap</label>
+                    <textarea name="alamat" required rows="3" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-lgRed"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-lgRed text-white py-2 rounded hover:bg-lgDarkRed transition">Lanjut ke Pembayaran</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 💬 Fitur Chat -->
+    <div class="chat-box">
+        <button onclick="toggleChat()" class="w-14 h-14 bg-lgRed text-white rounded-full flex items-center justify-center shadow-lg hover:bg-lgDarkRed transition">
+            <i class="fa fa-comments text-xl"></i>
+        </button>
+        <div id="chatWindow" class="chat-window mt-2">
+            <div class="bg-lgDarkRed text-white p-3 rounded-t-lg flex justify-between items-center">
+                <h4 class="font-semibold">Chat Kami</h4>
+                <button onclick="toggleChat()" class="text-white text-lg hover:text-gray-200">&times;</button>
+            </div>
+            <div id="chatPesan" class="flex-1 p-3 overflow-y-auto h-72 text-sm bg-gray-50"></div>
+            <div class="p-3 border-t bg-white">
+                <input type="text" id="namaPengirim" placeholder="Nama Anda" class="w-full border border-gray-300 rounded px-2 py-1.5 mb-2 text-sm focus:outline-none focus:ring-1 focus:ring-lgRed">
+                <div class="flex gap-2">
+                    <input type="text" id="inputPesan" placeholder="Ketik pesan..." class="flex-1 border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-lgRed">
+                    <button onclick="kirimPesanChat()" class="bg-lgRed text-white px-3 rounded hover:bg-lgDarkRed text-sm">Kirim</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+      const API = "http://20.219.4.22:3001";
+        let detailId = null;
+
+        // Fungsi Notifikasi Kustom
+        function tampilkanNotifikasi(teks) {
+            const notif = document.getElementById('notifikasi');
+            document.getElementById('teksNotifikasi').textContent = teks;
+            notif.style.display = 'block';
+            setTimeout(() => tutupNotifikasi(), 3000);
+        }
+
+        function tutupNotifikasi() {
+            document.getElementById('notifikasi').style.display = 'none';
+        }
+
+        async function muatProduk() {
+            const res = await fetch(`${API}/api/produk`);
+            const { data } = await res.json();
+            document.getElementById('daftarProduk').innerHTML = data.map(p => `
+                <div class="bg-white rounded shadow p-4 card-hover">
+                    <img src="${p.gambar}" alt="${p.nama}" class="w-full h-48 object-cover rounded mb-3">
+                    <span class="text-xs bg-lgLight text-lgDarkRed px-2 py-1 rounded">${p.kategori}</span>
+                    <h3 class="font-semibold mt-2 line-clamp-2">${p.nama}</h3>
+                    <p class="text-lgRed font-bold mt-1">Rp ${p.harga.toLocaleString('id-ID')}</p>
+                    <p class="text-sm text-gray-500 mb-3">Stok: ${p.stok}</p>
+                    <button onclick="bukaDetail(${p.id})" class="w-full border border-lgRed text-lgRed py-1.5 rounded mb-2 hover:bg-red-50 transition">Lihat Detail</button>
+                    <button onclick="tambahKeranjang(${p.id})" class="w-full bg-lgRed text-white py-1.5 rounded hover:bg-lgDarkRed transition">Tambah ke Keranjang</button>
+                </div>
+            `).join('');
+        }
+
+        async function bukaDetail(id) {
+            detailId = id;
+            const res = await fetch(`${API}/api/produk/${id}`);
+            const { data } = await res.json();
+            document.getElementById('namaBarang').textContent = data.nama;
+            document.getElementById('deskripsiBarang').textContent = data.deskripsi;
+            document.getElementById('hargaBarang').textContent = `Rp ${data.harga.toLocaleString('id-ID')}`;
+            document.getElementById('stokBarang').textContent = `Stok tersedia: ${data.stok}`;
+            document.getElementById('gambarBarang').src = data.gambar;
+            const vid = document.getElementById('videoBarang');
+            if (data.video) { vid.src = data.video; vid.style.display = 'block'; } else vid.style.display = 'none';
+            document.getElementById('modalDetail').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        async function tambahKeranjang(id) {
+            await fetch(`${API}/api/keranjang`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ produkId: id, jumlah: 1 })
+            });
+            updateKeranjang();
+            tampilkanNotifikasi('Berhasil ditambahkan ke keranjang!');
+        }
+
+        async function updateKeranjang() {
+            const res = await fetch(`${API}/api/keranjang`);
+            const { data } = await res.json();
+            document.getElementById('jumlahKeranjang').textContent = data.reduce((a,b)=>a+b.jumlah,0);
+        }
+
+        async function bukaKeranjang() {
+            const res = await fetch(`${API}/api/keranjang`);
+            const { data } = await res.json();
+            let total = 0;
+            const isi = data.length === 0 
+                ? '<p class="text-center text-gray-500 py-4">Keranjang belanja Anda kosong</p>' 
+                : data.map(i => {
+                    const subtotal = i.harga * i.jumlah; total += subtotal;
+                    return `<div class="border-b py-3">
+                        <p class="font-medium">${i.nama}</p>
+                        <p class="text-sm text-gray-600">Rp ${i.harga.toLocaleString()} × ${i.jumlah} = <span class="font-semibold text-lgDarkRed">Rp ${subtotal.toLocaleString()}</span></p>
+                    </div>`;
+                }).join('');
+            document.getElementById('isiKeranjang').innerHTML = isi;
+            document.getElementById('totalKeranjang').textContent = `Total: Rp ${total.toLocaleString()}`;
+            document.getElementById('modalKeranjang').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function bukaFormPesan() { 
+            tutupModal(); 
+            document.getElementById('modalPesan').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        async function kirimPesanan(e) {
+            e.preventDefault();
+            const form = new FormData(e.target);
+            const total = document.getElementById('totalKeranjang').textContent.replace(/\D/g, '');
+            const res = await fetch(`${API}/api/pesan`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    nama: form.get('nama'), 
+                    telepon: form.get('telepon'), 
+                    alamat: form.get('alamat'), 
+                    total: parseInt(total) 
+                })
+            });
+            const hasil = await res.json();
+            if (hasil.sukses) {
+                window.location.href = `/pembayaran.html?id=${hasil.pesananId}&total=${total}`;
+            } else {
+                tampilkanNotifikasi('Gagal membuat pesanan, coba lagi!');
+            }
+        }
+
+        function tutupModal() {
+            document.getElementById('modalDetail').style.display = 'none';
+            document.getElementById('modalKeranjang').style.display = 'none';
+            document.getElementById('modalPesan').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        // 💬 Fungsi Chat
+        function toggleChat() {
+            const chat = document.getElementById('chatWindow');
+            const isOpen = chat.style.display === 'flex';
+            chat.style.display = isOpen ? 'none' : 'flex';
+            if (!isOpen) document.getElementById('inputPesan').focus();
+        }
+
+        async function kirimPesanChat() {
+            const nama = document.getElementById('namaPengirim').value.trim();
+            const pesan = document.getElementById('inputPesan').value.trim();
+            if (!nama || !pesan) {
+                tampilkanNotifikasi('Isi nama dan pesan terlebih dahulu!');
+                return;
+            }
+
+            await fetch(`${API}/api/chat/kirim`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nama, pesan })
+            });
+
+            document.getElementById('inputPesan').value = '';
+            tampilkanPesanChat(nama, pesan);
+        }
+
+        function tampilkanPesanChat(nama, pesan) {
+            const konten = document.getElementById('chatPesan');
+            konten.innerHTML += `<div class="mb-3 text-right">
+                <span class="inline-block bg-lgRed text-white px-3 py-2 rounded-lg max-w-[85%] text-left">
+                    <span class="font-semibold text-xs opacity-90">${nama}</span><br>
+                    ${pesan}
+                </span>
+            </div>`;
+            konten.scrollTop = konten.scrollHeight;
+        }
+
+        window.onload = () => { muatProduk(); updateKeranjang(); };
+    </script>
+</body>
+</html>
